@@ -63,7 +63,7 @@ def SqueezeNet(include_top=True, weights="imagenet", input_tensor=None, input_sh
     x = _fire(x, (64, 256, 256), name="fire9")
 
     if include_top:
-        WEIGHTS_PATH = 'https://github.com/DeepCognition/keras-squeezenet/releases/download/v0.1/squeezenet_weights.h5'
+        WEIGHTS_PATH = 'https://github.com/DeepCognition/keras-squeezenet/releases/download/v0.2/squeezenet_weights.h5'
         WEIGHTS_FILE = 'squeezenet_weights.h5'
         
         x = Dropout(0.5, name='dropout9')(x)
@@ -73,7 +73,7 @@ def SqueezeNet(include_top=True, weights="imagenet", input_tensor=None, input_sh
         x = Flatten(name='flatten10')(x)
         x = Activation("softmax", name='softmax')(x)
     else:
-        WEIGHTS_PATH = 'https://github.com/DeepCognition/keras-squeezenet/releases/download/v0.1/squeezenet_weights_notop.h5'
+        WEIGHTS_PATH = 'https://github.com/DeepCognition/keras-squeezenet/releases/download/v0.2/squeezenet_weights_notop.h5'
         WEIGHTS_FILE = 'squeezenet_weights_notop.h5'
         
         if pooling == "avg":
@@ -86,7 +86,7 @@ def SqueezeNet(include_top=True, weights="imagenet", input_tensor=None, input_sh
     if weights == 'imagenet':
         weights_path = get_file(WEIGHTS_FILE,
                                 WEIGHTS_PATH,
-                                cache_subdir='models')
+                                cache_subdir='model')
 
         model.load_weights(weights_path)
 
