@@ -1,7 +1,7 @@
 import keras.backend as K
 
 from keras.models import Model
-from keras.layers import Input, Flatten, Dropout, Merge, Activation
+from keras.layers import Input, Flatten, Dropout, Concatenate, Activation
 from keras.layers import Convolution2D, MaxPooling2D, AveragePooling2D
 from keras.layers import GlobalMaxPooling2D, GlobalAveragePooling2D
 
@@ -10,12 +10,14 @@ from keras.applications.imagenet_utils import preprocess_input
 from keras.applications.imagenet_utils import _obtain_input_shape
 from keras.utils.data_utils import get_file
 
+WEIGHTS_PATH = 'https://github.com/wohlert/keras-squeezenet/releases/download/v0.1/squeezenet_weights.h5'
+
 def _fire(x, filters, name="fire"):
     sq_filters, ex1_filters, ex2_filters = filters
-    squeeze = Convolution2D(sq_filters, 1, 1, activation='relu', border_mode='same', name=name + "/squeeze1x1")(x)
-    expand1 = Convolution2D(ex1_filters, 1, 1, activation='relu', border_mode='same', name=name + "/expand1x1")(squeeze)
-    expand2 = Convolution2D(ex2_filters, 3, 3, activation='relu', border_mode='same', name=name + "/expand3x3")(squeeze)
-    x = Merge(concat_axis=-1, name=name, mode='concat')([expand1, expand2])
+    squeeze = Convolution2D(sq_filters, (1, 1), activation='relu', padding='same', name=name + "/squeeze1x1")(x)
+    expand1 = Convolution2D(ex1_filters, (1, 1), activation='relu', padding='same', name=name + "/expand1x1")(squeeze)
+    expand2 = Convolution2D(ex2_filters, (3, 3), activation='relu', padding='same', name=name + "/expand3x3")(squeeze)
+    x = Concatenate(axis=-1, name=name)([expand1, expand2])
     return x
 
 def SqueezeNet(include_top=True, weights="imagenet", input_tensor=None, input_shape=None, pooling=None, classes=1000):
@@ -32,7 +34,7 @@ def SqueezeNet(include_top=True, weights="imagenet", input_tensor=None, input_sh
     input_shape = _obtain_input_shape(input_shape,
                                       default_size=224,
                                       min_size=48,
-                                      dim_ordering=K.image_dim_ordering(),
+                                      data_format=K.image_data_format(),
                                       include_top=include_top)
 
     if input_tensor is None:
@@ -43,18 +45,18 @@ def SqueezeNet(include_top=True, weights="imagenet", input_tensor=None, input_sh
         else:
             img_input = input_tensor
 
-    x = Convolution2D(64, 3, 3, subsample=(2, 2), border_mode="same", activation="relu", name='conv1')(img_input)
-    x = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), name='maxpool1', border_mode="valid")(x)
+    x = Convolution2D(64, kernel_size=(3, 3), strides=(2, 2), padding="same", activation="relu", name='conv1')(img_input)
+    x = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), name='maxpool1', padding="valid")(x)
 
     x = _fire(x, (16, 64, 64), name="fire2")
     x = _fire(x, (16, 64, 64), name="fire3")
 
-    x = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), name='maxpool3', border_mode="valid")(x)
+    x = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), name='maxpool3', padding="valid")(x)
 
     x = _fire(x, (32, 128, 128), name="fire4")
     x = _fire(x, (32, 128, 128), name="fire5")
 
-    x = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), name='maxpool5', border_mode="valid")(x)
+    x = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), name='maxpool5', padding="valid")(x)
 
     x = _fire(x, (48, 192, 192), name="fire6")
     x = _fire(x, (48, 192, 192), name="fire7")
@@ -63,19 +65,13 @@ def SqueezeNet(include_top=True, weights="imagenet", input_tensor=None, input_sh
     x = _fire(x, (64, 256, 256), name="fire9")
 
     if include_top:
-        WEIGHTS_PATH = 'https://github.com/DeepCognition/keras-squeezenet/releases/download/v0.1/squeezenet_weights.h5'
-        WEIGHTS_FILE = 'squeezenet_weights.h5'
-        
         x = Dropout(0.5, name='dropout9')(x)
 
-        x = Convolution2D(classes, 1, 1, border_mode='valid', name='conv10')(x)
+        x = Convolution2D(classes, (1, 1), padding='valid', name='conv10')(x)
         x = AveragePooling2D(pool_size=(13, 13), name='avgpool10')(x)
         x = Flatten(name='flatten10')(x)
         x = Activation("softmax", name='softmax')(x)
     else:
-        WEIGHTS_PATH = 'https://github.com/DeepCognition/keras-squeezenet/releases/download/v0.1/squeezenet_weights_notop.h5'
-        WEIGHTS_FILE = 'squeezenet_weights_notop.h5'
-        
         if pooling == "avg":
             x = GlobalAveragePooling2D(name="avgpool10")(x)
         else:
@@ -84,7 +80,7 @@ def SqueezeNet(include_top=True, weights="imagenet", input_tensor=None, input_sh
     model = Model(img_input, x, name="squeezenet")
 
     if weights == 'imagenet':
-        weights_path = get_file(WEIGHTS_FILE,
+        weights_path = get_file('squeezenet_weights.h5',
                                 WEIGHTS_PATH,
                                 cache_subdir='models')
 
