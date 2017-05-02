@@ -86,7 +86,7 @@ def SqueezeNet(include_top=True, weights="imagenet", input_tensor=None, input_sh
     if weights == 'imagenet':
         weights_path = get_file(WEIGHTS_FILE,
                                 WEIGHTS_PATH,
-                                cache_subdir='model')
+                                cache_subdir='models')
 
         model.load_weights(weights_path)
 
