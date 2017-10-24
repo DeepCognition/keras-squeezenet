@@ -5,5 +5,4 @@ the same structure as a normal Keras application and much of the code is a
 direct port of the `keras.applications.vgg16`.
 
 The model is **pretrained** and weights are included both in this repository
-and as a `.h5` file automatically downloaded when instantiating the model. The
-weights have been ported from [tf-squeezenet](https://github.com/avoroshilov/tf-squeezenet).
+and as a `.h5` file automatically downloaded when instantiating the model.
